@@ -9,6 +9,7 @@ import FlashcardsView from './components/FlashcardsView'
 import SearchView from './components/SearchView'
 import LoadingScreen from './components/LoadingScreen'
 import MobileAppPage from './components/MobileAppPage'
+import InstallBanner from './components/InstallBanner'
 import { Subject, Chapter, Note } from './types'
 import { db, openDB } from './db'
 import { SEED_SUBJECTS, SEED_CHAPTERS, SEED_NOTES } from './store'
@@ -251,6 +252,9 @@ export default function App() {
           onAddChapter={saveChapter}
         />
       )}
+
+      {/* PWA Install Banner */}
+      <InstallBanner />
     </div>
   )
 }

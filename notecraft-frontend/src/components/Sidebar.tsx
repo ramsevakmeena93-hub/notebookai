@@ -1,7 +1,13 @@
-import { LayoutDashboard, Zap, CreditCard, Search, ChevronLeft, ChevronRight, Plus, Download, Smartphone } from 'lucide-react'
+import { LayoutDashboard, Zap, CreditCard, Search, ChevronLeft, ChevronRight, Plus, Download, Smartphone, MonitorDown } from 'lucide-react'
 import { Subject } from '../types'
 import { View } from '../App'
 import clsx from 'clsx'
+import { useState, useEffect } from 'react'
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
 
 interface Props {
   open: boolean
@@ -21,6 +27,28 @@ export default function Sidebar({
   onSelectSubject, onNewNote, onCapture,
   onToggle, onViewChange, currentView, onExport
 }: Props) {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [isInstalled, setIsInstalled] = useState(
+    window.matchMedia('(display-mode: standalone)').matches || !!(navigator as any).standalone
+  )
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e as BeforeInstallPromptEvent)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setIsInstalled(true))
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    await installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setIsInstalled(true)
+    setInstallPrompt(null)
+  }
   return (
     <aside className={clsx(
       'h-full bg-slate-900 text-white flex flex-col transition-all duration-300 shrink-0',
@@ -155,6 +183,20 @@ export default function Sidebar({
       <div className={clsx('border-t border-slate-700/60', open ? 'p-3 space-y-1' : 'p-2')}>
         {open ? (
           <>
+            {/* Install App button */}
+            {!isInstalled && (
+              <button
+                onClick={handleInstall}
+                className="w-full flex items-center gap-2 px-3 py-2.5 bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 text-blue-400 hover:text-blue-300 rounded-xl text-xs font-semibold transition-colors mb-1"
+              >
+                <MonitorDown size={14} /> Install App on Device
+              </button>
+            )}
+            {isInstalled && (
+              <div className="flex items-center gap-2 px-3 py-2 text-green-500 text-xs">
+                ✅ App Installed
+              </div>
+            )}
             <button
               onClick={onExport}
               className="w-full flex items-center gap-2 px-3 py-2 text-slate-500 hover:bg-slate-700 hover:text-white rounded-xl text-xs transition-colors"
@@ -167,9 +209,16 @@ export default function Sidebar({
             </div>
           </>
         ) : (
-          <button onClick={onExport} title="Export Backup" className="w-full flex justify-center p-2 text-slate-500 hover:text-white">
-            <Download size={14} />
-          </button>
+          <div className="flex flex-col gap-1">
+            {!isInstalled && (
+              <button onClick={handleInstall} title="Install App" className="w-full flex justify-center p-2 text-blue-500 hover:text-blue-400">
+                <MonitorDown size={15} />
+              </button>
+            )}
+            <button onClick={onExport} title="Export Backup" className="w-full flex justify-center p-2 text-slate-500 hover:text-white">
+              <Download size={14} />
+            </button>
+          </div>
         )}
       </div>
     </aside>
