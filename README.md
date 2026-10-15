@@ -2,118 +2,118 @@
 ### Your Personal AI Study Notebook
 
 > Capture knowledge. Create notes. Master every subject.
+> **100% Frontend — No backend, no server, no database setup needed.**
 
 ---
 
-## Quick Start (Frontend only — fully works without backend)
+## 🚀 Quick Start
 
 ```bash
 cd notecraft-frontend
 npm install
 npm run dev
 ```
-Open → **http://localhost:3000**
 
-The frontend uses localStorage, so everything works offline without any backend or database.
+Open → **http://localhost:5174**
 
----
-
-## Full Stack Setup
-
-### Frontend
-```bash
-cd notecraft-frontend
-npm install
-npm run dev         # http://localhost:3000
-```
-
-### Backend (optional — for multi-device sync)
-```bash
-cd notecraft-backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-cp .env.example .env         # Edit DATABASE_URL
-uvicorn app.main:app --reload --port 8000
-```
-API docs → **http://localhost:8000/docs**
-
-### Database
-Requires PostgreSQL. Create a database named `notecraft`.
-Tables are auto-created on first backend startup.
+That's it. Everything runs in your browser.
 
 ---
 
-## Features
+## 🧠 How It Works
 
-### ✅ Phase 1 (Built)
-- **Dashboard** — Subject sidebar, stats, recent notes, search
-- **Subject & Chapter management** — Create, organize, delete
-- **Note Editor** — Structured blocks: Heading, Definition, Formula, Example, Key Point, Margin Tip, Code, Question
-- **Quick Capture** — Paste ChatGPT answers → auto-converted to structured blocks
-- **Notebook View** — Realistic handwritten-style pages (Kalam / Caveat fonts)
-- **Paper styles** — Ruled, Dotted, Graph, Plain
-- **Ink colors** — Navy, Black, Blue, Red, Green, Purple
-- **PDF Export** — Browser print dialog
-- **Flashcards** — Auto-generated from note blocks, flip UI, score tracking
+| What you do | What happens |
+|---|---|
+| Paste ChatGPT answer | Auto-detected as Headings, Definitions, Formulas, Examples, Key Points |
+| Upload screenshot | Attached to note, shown in notebook view |
+| Create a note | Saved to **IndexedDB** (browser database, permanent) |
+| Export Backup | Downloads a `.json` file with all your data |
+
+---
+
+## ✨ Features
+
+- **Smart Capture** — Paste any text (ChatGPT, textbook, lecture notes). LaTeX like `\rightarrow` auto-converts to `→`
+- **Structured Blocks** — Heading, Definition, Formula, Example, Key Point, Margin Tip, Code, Question
+- **Handwritten Notebook View** — Realistic pages using Kalam / Caveat fonts
+- **Paper Styles** — Ruled, Dotted, Graph, Plain
+- **Screenshot Attachments** — Drag & drop or Ctrl+V screenshots directly into notes
+- **Flashcards** — Auto-generated from your Definitions, Formulas, Key Points
 - **Full-text Search** — Search across all notes, subjects, tags
-- **localStorage persistence** — Works 100% offline
-
-### 🔜 Phase 2+ (Roadmap)
-- Screenshot OCR (backend: Tesseract)
-- PDF / DOCX import (backend: PyMuPDF, python-docx)
-- Spaced repetition revision scheduler
-- Knowledge graph across subjects
-- PyTorch model for subject auto-classification
+- **PDF Export** — Print any note as PDF
+- **IndexedDB Database** — All data stored permanently in your browser
+- **Export / Import** — Backup your entire notebook as JSON
+- **Subjects & Chapters** — Organize notes into DBMS, DSA, OS, COA, etc.
+- **Mobile App Page** — APK download page built-in
 
 ---
 
-## Tech Stack
+## 🗂️ Project Structure
+
+```
+notecraft-frontend/
+├── public/
+│   └── logo.png              ← App logo
+├── src/
+│   ├── App.tsx               ← Root, routing, state
+│   ├── db.ts                 ← IndexedDB database (all CRUD)
+│   ├── store.ts              ← Seed data for first launch
+│   ├── types.ts              ← TypeScript interfaces
+│   ├── utils.ts              ← Smart text analyser + LaTeX cleaner
+│   └── components/
+│       ├── Sidebar.tsx       ← Navigation sidebar
+│       ├── Dashboard.tsx     ← Home page with subjects & notes
+│       ├── NoteEditor.tsx    ← Block-based note editor
+│       ├── NotebookView.tsx  ← Handwritten notebook renderer
+│       ├── CaptureModal.tsx  ← Smart capture (paste/link/screenshot)
+│       ├── FlashcardsView.tsx← Flashcard study mode
+│       ├── SearchView.tsx    ← Full-text search
+│       ├── LoadingScreen.tsx ← Animated splash screen
+│       └── MobileAppPage.tsx ← APK download page
+```
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Frontend | React 18 + Vite + TypeScript |
+|---|---|
+| Framework | React 18 + Vite + TypeScript |
 | Styling | Tailwind CSS |
 | Fonts | Google Fonts: Kalam, Caveat |
-| Backend | Python FastAPI |
-| Database | PostgreSQL + SQLAlchemy |
-| OCR | Tesseract (pytesseract) |
-| PDF | PyMuPDF |
-| Auth | JWT (python-jose) |
+| Database | IndexedDB (browser-native, no setup) |
+| Icons | Lucide React |
+| Toasts | React Hot Toast |
 
 ---
 
-## Project Structure
+## 📦 Install & Run
 
+```bash
+# Clone
+git clone https://github.com/ramsevakmeena93-hub/notebookai.git
+cd notebookai/notecraft-frontend
+
+# Install
+npm install
+
+# Run
+npm run dev
 ```
-NOTES MAKER/
-├── notecraft-frontend/      # React app
-│   └── src/
-│       ├── App.tsx           # Root, state management
-│       ├── store.ts          # localStorage persistence
-│       ├── utils.ts          # Text-to-blocks processing
-│       └── components/
-│           ├── Sidebar.tsx
-│           ├── Dashboard.tsx
-│           ├── NoteEditor.tsx
-│           ├── NotebookView.tsx
-│           ├── CaptureModal.tsx
-│           ├── FlashcardsView.tsx
-│           └── SearchView.tsx
-├── notecraft-backend/       # FastAPI app
-│   └── app/
-│       ├── main.py
-│       ├── models.py         # SQLAlchemy ORM
-│       ├── schemas.py        # Pydantic models
-│       ├── processing.py     # Text/OCR/PDF pipeline
-│       └── routers/
-│           ├── auth.py
-│           ├── subjects.py
-│           ├── chapters.py
-│           ├── notes.py
-│           ├── sources.py
-│           └── search.py
-├── start-frontend.bat
-├── start-backend.bat
-└── README.md
-```
+
+Open → **http://localhost:5174**
+
+---
+
+## 💾 Data Storage
+
+All your notes are stored in **IndexedDB** — your browser's built-in database.
+
+- ✅ Works completely offline
+- ✅ No account or login needed
+- ✅ Data survives browser restarts
+- ✅ Use **Export Backup** in sidebar to save a `.json` backup anytime
+
+---
+
+*Made for students — Study smarter, not harder* 🎯
