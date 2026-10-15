@@ -62,9 +62,9 @@ export default function Dashboard({
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-3 md:p-6 max-w-6xl mx-auto">
+      {/* Header — hidden on mobile (handled by MobileHeader) */}
+      <div className="hidden md:flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
             {activeSubject ? `${activeSubject.icon} ${activeSubject.name}` : '📚 Your Workspace'}
@@ -89,8 +89,18 @@ export default function Dashboard({
         </div>
       </div>
 
+      {/* Mobile subject header */}
+      {activeSubject && (
+        <div className="md:hidden mb-4 px-1">
+          <h1 className="text-lg font-bold text-slate-800">
+            {activeSubject.icon} {activeSubject.name}
+          </h1>
+          <p className="text-slate-500 text-xs mt-0.5">{activeSubject.description}</p>
+        </div>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Subjects', value: subjects.length, icon: BookOpen, color: 'blue' },
           { label: 'Notes', value: notes.length, icon: FileText, color: 'green' },
@@ -100,12 +110,12 @@ export default function Dashboard({
             return now.getTime() - d.getTime() < 7*24*60*60*1000
           }).length, icon: Zap, color: 'purple' },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
-            <div className={`w-10 h-10 rounded-lg bg-${color}-50 flex items-center justify-center mb-2`}>
-              <Icon size={20} className={`text-${color}-600`} />
+          <div key={label} className="bg-white rounded-xl p-3 md:p-4 shadow-sm border border-slate-100">
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg bg-${color}-50 flex items-center justify-center mb-1.5 md:mb-2`}>
+              <Icon size={16} className={`text-${color}-600`} />
             </div>
-            <div className="text-2xl font-bold text-slate-800">{value}</div>
-            <div className="text-sm text-slate-500">{label}</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{value}</div>
+            <div className="text-xs md:text-sm text-slate-500">{label}</div>
           </div>
         ))}
       </div>
@@ -254,7 +264,7 @@ export default function Dashboard({
                 return (
                   <div
                     key={note.id}
-                    className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group"
+                    className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 active:bg-slate-50 hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group"
                     onClick={() => onOpenNote(note.id)}
                   >
                     <div className="flex items-start justify-between mb-2">

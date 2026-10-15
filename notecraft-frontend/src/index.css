@@ -6,7 +6,12 @@
   body {
     font-family: 'Inter', sans-serif;
     background-color: #f8fafc;
+    /* Prevent iOS rubber-band bounce on body */
+    overscroll-behavior: none;
   }
+  /* Safe area support for notch/home bar devices */
+  .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
 
 @layer utilities {

@@ -10,6 +10,8 @@ import SearchView from './components/SearchView'
 import LoadingScreen from './components/LoadingScreen'
 import MobileAppPage from './components/MobileAppPage'
 import InstallBanner from './components/InstallBanner'
+import MobileHeader from './components/MobileHeader'
+import MobileBottomNav from './components/MobileBottomNav'
 import { Subject, Chapter, Note } from './types'
 import { db, openDB } from './db'
 import { SEED_SUBJECTS, SEED_CHAPTERS, SEED_NOTES } from './store'
@@ -17,33 +19,29 @@ import { SEED_SUBJECTS, SEED_CHAPTERS, SEED_NOTES } from './store'
 export type View = 'dashboard' | 'notebook' | 'editor' | 'flashcards' | 'search' | 'mobile'
 
 export default function App() {
-  const [ready,          setReady]          = useState(false)
-  const [subjects,       setSubjects]       = useState<Subject[]>([])
-  const [chapters,       setChapters]       = useState<Chapter[]>([])
-  const [notes,          setNotes]          = useState<Note[]>([])
-  const [view,           setView]           = useState<View>('dashboard')
-  const [activeSubjectId,setActiveSubjectId]= useState<string | null>(null)
-  const [activeNoteId,   setActiveNoteId]   = useState<string | null>(null)
-  const [showCapture,    setShowCapture]    = useState(false)
-  const [sidebarOpen,    setSidebarOpen]    = useState(true)
+  const [ready,           setReady]           = useState(false)
+  const [subjects,        setSubjects]        = useState<Subject[]>([])
+  const [chapters,        setChapters]        = useState<Chapter[]>([])
+  const [notes,           setNotes]           = useState<Note[]>([])
+  const [view,            setView]            = useState<View>('dashboard')
+  const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null)
+  const [activeNoteId,    setActiveNoteId]    = useState<string | null>(null)
+  const [showCapture,     setShowCapture]     = useState(false)
+  const [sidebarOpen,     setSidebarOpen]     = useState(true)
+  // Mobile drawer open state
+  const [drawerOpen,      setDrawerOpen]      = useState(false)
 
-  // ── Boot: open DB, migrate if needed, load or seed ──────────────────────────
+  // ── Boot ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     async function boot() {
       try {
         await openDB()
-
-        // Migrate old localStorage data if present
         await db.migrateFromLocalStorage()
-
-        // Load everything from IndexedDB
         const [dbSubjects, dbChapters, dbNotes] = await Promise.all([
           db.subjects.getAll(),
           db.chapters.getAll(),
           db.notes.getAll(),
         ])
-
-        // First ever launch — seed the DB
         if (dbSubjects.length === 0) {
           await db.subjects.saveAll(SEED_SUBJECTS)
           await db.chapters.saveAll(SEED_CHAPTERS)
@@ -52,7 +50,6 @@ export default function App() {
           setChapters(SEED_CHAPTERS)
           setNotes(SEED_NOTES)
         } else {
-          // Sort notes newest first
           const sorted = [...dbNotes].sort(
             (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
           )
@@ -69,7 +66,7 @@ export default function App() {
     boot()
   }, [])
 
-  // ── Persist helpers — update state + IndexedDB together ─────────────────────
+  // ── Persist ──────────────────────────────────────────────────────────────────
   const saveSubject = useCallback(async (s: Subject) => {
     await db.subjects.save(s)
     setSubjects(prev => {
@@ -79,14 +76,11 @@ export default function App() {
   }, [])
 
   const deleteSubject = useCallback(async (id: string) => {
-    // Delete subject + all its chapters + notes
     const toDeleteChapters = chapters.filter(c => c.subjectId === id)
     const toDeleteNotes    = notes.filter(n => n.subjectId === id)
-
     await db.subjects.delete(id)
     await Promise.all(toDeleteChapters.map(c => db.chapters.delete(c.id)))
     await Promise.all(toDeleteNotes.map(n => db.notes.delete(n.id)))
-
     setSubjects(prev => prev.filter(s => s.id !== id))
     setChapters(prev => prev.filter(c => c.subjectId !== id))
     setNotes(prev    => prev.filter(n => n.subjectId !== id))
@@ -104,12 +98,8 @@ export default function App() {
     await db.notes.save(note)
     setNotes(prev => {
       const exists = prev.find(n => n.id === note.id)
-      const updated = exists
-        ? prev.map(n => n.id === note.id ? note : n)
-        : [note, ...prev]
-      return updated
+      return exists ? prev.map(n => n.id === note.id ? note : n) : [note, ...prev]
     })
-    // Recalculate noteCount for that subject
     const allNotes = await db.notes.getAll()
     const count = allNotes.filter(n => n.subjectId === note.subjectId).length
     setSubjects(prev => prev.map(s =>
@@ -132,7 +122,7 @@ export default function App() {
     }
   }, [notes])
 
-  // ── Navigation helpers ──────────────────────────────────────────────────────
+  // ── Navigation ───────────────────────────────────────────────────────────────
   const openNote = (noteId: string) => { setActiveNoteId(noteId); setView('notebook') }
   const editNote = (noteId: string) => { setActiveNoteId(noteId); setView('editor') }
   const newNote  = (subjectId?: string) => {
@@ -141,14 +131,13 @@ export default function App() {
     setView('editor')
   }
 
-  // ── DB export / import (backup) ─────────────────────────────────────────────
   const handleExport = async () => {
     const data = await db.exportAll()
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
-    a.href     = url
-    a.download = `notecraft-backup-${new Date().toISOString().slice(0,10)}.json`
+    a.href = url
+    a.download = `notecraft-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -156,89 +145,148 @@ export default function App() {
   if (!ready) return <LoadingScreen />
 
   const activeNote = notes.find(n => n.id === activeNoteId)
+
+  // Views where we hide bottom nav (full-screen views)
+  const hideBottomNav = view === 'editor' || view === 'notebook'
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
-      <Toaster position="top-right" />
+      <Toaster position="top-center" toastOptions={{ style: { fontSize: '14px' } }} />
 
-      <Sidebar
-        open={sidebarOpen}
-        subjects={subjects}
-        activeSubjectId={activeSubjectId}
-        onSelectSubject={(id) => { setActiveSubjectId(id); setView('dashboard') }}
-        onNewNote={() => newNote()}
-        onCapture={() => setShowCapture(true)}
-        onToggle={() => setSidebarOpen(o => !o)}
-        onViewChange={setView}
-        currentView={view}
-        onExport={handleExport}
-      />
+      {/* ── Desktop Sidebar (hidden on mobile) */}
+      <div className="hidden md:flex">
+        <Sidebar
+          open={sidebarOpen}
+          subjects={subjects}
+          activeSubjectId={activeSubjectId}
+          onSelectSubject={(id) => { setActiveSubjectId(id); setView('dashboard') }}
+          onNewNote={() => newNote()}
+          onCapture={() => setShowCapture(true)}
+          onToggle={() => setSidebarOpen(o => !o)}
+          onViewChange={setView}
+          currentView={view}
+          onExport={handleExport}
+        />
+      </div>
 
-      <main className="flex-1 overflow-auto">
-        {view === 'dashboard' && (
-          <Dashboard
-            subjects={subjects}
-            chapters={chapters}
-            notes={notes}
-            activeSubjectId={activeSubjectId}
-            onOpenNote={openNote}
-            onEditNote={editNote}
-            onNewNote={newNote}
+      {/* ── Mobile Drawer overlay */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          {/* Drawer panel */}
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-slate-900 z-50 flex flex-col shadow-2xl">
+            <Sidebar
+              open={true}
+              subjects={subjects}
+              activeSubjectId={activeSubjectId}
+              onSelectSubject={(id) => {
+                setActiveSubjectId(id)
+                setView('dashboard')
+                setDrawerOpen(false)
+              }}
+              onNewNote={() => { newNote(); setDrawerOpen(false) }}
+              onCapture={() => { setShowCapture(true); setDrawerOpen(false) }}
+              onToggle={() => setDrawerOpen(false)}
+              onViewChange={(v) => { setView(v); setDrawerOpen(false) }}
+              currentView={view}
+              onExport={handleExport}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Mobile top header */}
+        <MobileHeader
+          view={view}
+          activeNote={activeNote}
+          onMenuOpen={() => setDrawerOpen(true)}
+          onCapture={() => setShowCapture(true)}
+          onBack={() => setView('dashboard')}
+        />
+
+        {/* Page content */}
+        <main className={`flex-1 overflow-auto ${!hideBottomNav ? 'pb-16 md:pb-0' : ''}`}>
+          {view === 'dashboard' && (
+            <Dashboard
+              subjects={subjects}
+              chapters={chapters}
+              notes={notes}
+              activeSubjectId={activeSubjectId}
+              onOpenNote={openNote}
+              onEditNote={editNote}
+              onNewNote={newNote}
+              onCapture={() => setShowCapture(true)}
+              onAddSubject={saveSubject}
+              onDeleteSubject={deleteSubject}
+              onAddChapter={saveChapter}
+              onSearchClick={() => setView('search')}
+            />
+          )}
+
+          {view === 'notebook' && activeNote && (
+            <NotebookView
+              note={activeNote}
+              subjects={subjects}
+              chapters={chapters}
+              onBack={() => setView('dashboard')}
+              onEdit={() => editNote(activeNote.id)}
+            />
+          )}
+
+          {view === 'editor' && (
+            <NoteEditor
+              note={activeNoteId ? activeNote : undefined}
+              subjects={subjects}
+              chapters={chapters}
+              defaultSubjectId={activeSubjectId || undefined}
+              onSave={async (note) => { await saveNote(note); openNote(note.id) }}
+              onCancel={() => setView('dashboard')}
+              onAddChapter={saveChapter}
+            />
+          )}
+
+          {view === 'flashcards' && (
+            <FlashcardsView
+              notes={notes}
+              subjects={subjects}
+              onBack={() => setView('dashboard')}
+            />
+          )}
+
+          {view === 'search' && (
+            <SearchView
+              notes={notes}
+              subjects={subjects}
+              chapters={chapters}
+              onOpenNote={openNote}
+              onBack={() => setView('dashboard')}
+            />
+          )}
+
+          {view === 'mobile' && (
+            <MobileAppPage onBack={() => setView('dashboard')} />
+          )}
+        </main>
+
+        {/* Mobile bottom nav */}
+        {!hideBottomNav && (
+          <MobileBottomNav
+            currentView={view}
+            onViewChange={setView}
             onCapture={() => setShowCapture(true)}
-            onAddSubject={saveSubject}
-            onDeleteSubject={deleteSubject}
-            onAddChapter={saveChapter}
-            onSearchClick={() => setView('search')}
+            noteCount={notes.length}
           />
         )}
+      </div>
 
-        {view === 'notebook' && activeNote && (
-          <NotebookView
-            note={activeNote}
-            subjects={subjects}
-            chapters={chapters}
-            onBack={() => setView('dashboard')}
-            onEdit={() => editNote(activeNote.id)}
-          />
-        )}
-
-        {view === 'editor' && (
-          <NoteEditor
-            note={activeNoteId ? activeNote : undefined}
-            subjects={subjects}
-            chapters={chapters}
-            defaultSubjectId={activeSubjectId || undefined}
-            onSave={async (note) => {
-              await saveNote(note)
-              openNote(note.id)
-            }}
-            onCancel={() => setView('dashboard')}
-            onAddChapter={saveChapter}
-          />
-        )}
-
-        {view === 'flashcards' && (
-          <FlashcardsView
-            notes={notes}
-            subjects={subjects}
-            onBack={() => setView('dashboard')}
-          />
-        )}
-
-        {view === 'search' && (
-          <SearchView
-            notes={notes}
-            subjects={subjects}
-            chapters={chapters}
-            onOpenNote={openNote}
-            onBack={() => setView('dashboard')}
-          />
-        )}
-
-        {view === 'mobile' && (
-          <MobileAppPage onBack={() => setView('dashboard')} />
-        )}
-      </main>
-
+      {/* Modals */}
       {showCapture && (
         <CaptureModal
           subjects={subjects}
@@ -253,7 +301,6 @@ export default function App() {
         />
       )}
 
-      {/* PWA Install Banner */}
       <InstallBanner />
     </div>
   )
